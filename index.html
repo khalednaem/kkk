@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SECURE TERMINAL</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: "Courier New", monospace;
+    color: #00ff41;
+}
+
+body {
+    animation: screenFlicker .12s infinite alternate;
+}
+
+@keyframes screenFlicker {
+    from { opacity: .96; }
+    to { opacity: 1; }
+}
+
+.screen {
+    width: 100%;
+    height: 100vh;
+    padding: 15px;
+    position: relative;
+
+    background:
+        radial-gradient(circle at center,
+        #004d13 0%,
+        #001d08 28%,
+        #000 72%);
+}
+
+.terminal {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #00ff41;
+
+    padding: 15px;
+
+    position: relative;
+    overflow: hidden;
+
+    box-shadow:
+        0 0 25px #00ff41,
+        inset 0 0 45px rgba(0,255,65,.15);
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #00ff41;
+
+    padding-bottom: 10px;
+
+    font-size: 13px;
+}
+
+.logo {
+    font-weight: bold;
+    text-shadow: 0 0 12px #00ff41;
+}
+
+.status {
+    color: #00ff41;
+}
+
+.warning {
+    text-align: center;
+
+    margin: 12px 0;
+
+    font-size: 22px;
+    font-weight: bold;
+
+    color: #ff2222;
+
+    text-shadow:
+        0 0 8px red,
+        0 0 20px red;
+
+    animation: warning .2s infinite alternate;
+}
+
+@keyframes warning {
+    from {
+        opacity: .35;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+#code {
+    height: 58%;
+
+    overflow: hidden;
+
+    direction: ltr;
+    text-align: left;
+
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.line {
+    white-space: nowrap;
+}
+
+.green {
+    color: #00ff41;
+
+    text-shadow:
+        0 0 5px #00ff41;
+}
+
+.red {
+    color: #ff3030;
+
+    text-shadow:
+        0 0 7px red;
+}
+
+.progress-area {
+    position: absolute;
+
+    left: 6%;
+    right: 6%;
+
+    bottom: 65px;
+}
+
+.progress-border {
+    width: 100%;
+    height: 23px;
+
+    border: 1px solid #00ff41;
+
+    padding: 3px;
+
+    box-shadow:
+        0 0 15px #00ff41;
+}
+
+.progress {
+    height: 100%;
+
+    width: 0%;
+
+    background: #00ff41;
+
+    box-shadow:
+        0 0 20px #00ff41;
+
+    transition: width .03s linear;
+}
+
+.percent {
+    text-align: center;
+
+    margin-top: 7px;
+
+    font-size: 17px;
+}
+
+.bottom {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    bottom: 15px;
+
+    text-align: center;
+
+    font-size: 13px;
+}
+
+.final {
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        radial-gradient(circle,
+        #002b0b 0%,
+        #000 65%);
+
+    z-index: 10;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-direction: column;
+
+    text-align: center;
+}
+
+.final .icon {
+    font-size: 75px;
+
+    color: #00ff41;
+
+    text-shadow:
+        0 0 20px #00ff41,
+        0 0 40px #00ff41;
+
+    animation: pulse 0.6s infinite alternate;
+}
+
+.final h1 {
+    color: #00ff41;
+
+    font-size: 27px;
+
+    text-shadow:
+        0 0 10px #00ff41,
+        0 0 25px #00ff41;
+}
+
+.final p {
+    color: #aaa;
+}
+
+@keyframes pulse {
+    from {
+        transform: scale(.9);
+    }
+
+    to {
+        transform: scale(1.1);
+    }
+}
+
+.scanlines {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 3px,
+            rgba(0,255,65,.04) 4px
+        );
+}
+
+.noise {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 19;
+
+    pointer-events: none;
+
+    opacity: .06;
+
+    background-image:
+        repeating-radial-gradient(
+            circle at 0 0,
+            #fff 0,
+            transparent 1px,
+            transparent 3px
+        );
+
+    background-size: 5px 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="screen">
+
+    <div class="terminal">
+
+        <div class="top">
+
+            <div class="logo">
+                █ SECURE TERMINAL v9.7
+            </div>
+
+            <div class="status">
+                SYSTEM ONLINE
+            </div>
+
+        </div>
+
+        <div class="warning">
+            ⚠ SECURITY ALERT ⚠
+        </div>
+
+        <div id="code"></div>
+
+        <div class="progress-area">
+
+            <div class="progress-border">
+
+                <div
+                    class="progress"
+                    id="progress">
+                </div>
+
+            </div>
+
+            <div
+                class="percent"
+                id="percent">
+                0%
+            </div>
+
+        </div>
+
+        <div class="bottom">
+            PROCESSING SYSTEM...
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+    class="final"
+    id="final">
+
+    <div class="icon">
+        ✓
+    </div>
+
+    <h1>
+        تم إرسال المعلومات المطلوبة
+    </h1>
+
+    <p>
+        تمت العملية بنجاح
+    </p>
+
+</div>
+
+
+<div class="scanlines"></div>
+<div class="noise"></div>
+
+
+<script>
+
+/* =========================
+   الكود المتحرك
+========================= */
+
+const code =
+    document.getElementById("code");
+
+const messages = [
+
+    "[SYSTEM] Initializing secure terminal...",
+    "[NETWORK] Establishing encrypted channel...",
+    "[SECURITY] Checking protocols...",
+    "[SYSTEM] Loading modules...",
+    "[ACCESS] Verifying connection...",
+    "[PROCESS] Processing request...",
+    "[ENCRYPT] Encrypting transmission...",
+    "[SYSTEM] Running verification...",
+    "[NETWORK] Synchronizing...",
+    "[ACCESS] Authorization check...",
+    "[SYSTEM] Finalizing operation...",
+    "[STATUS] PROCESS COMPLETE"
+
+];
+
+let i = 0;
+
+
+function addCode() {
+
+    if (i < messages.length) {
+
+        const line =
+            document.createElement("div");
+
+        line.className = "line";
+
+        if (i === 2 || i === 9) {
+
+            line.classList.add("red");
+
+        } else {
+
+            line.classList.add("green");
+
+        }
+
+        const randomCode =
+            Math.random()
+            .toString(16)
+            .substring(2, 14)
+            .toUpperCase();
+
+        line.textContent =
+            messages[i]
+            + " ["
+            + randomCode
+            + "]";
+
+        code.appendChild(line);
+
+        code.scrollTop =
+            code.scrollHeight;
+
+        i++;
+
+        setTimeout(addCode, 70);
+    }
+}
+
+addCode();
+
+
+/* =========================
+   تحميل سريع جداً
+   حوالي ثانية واحدة
+========================= */
+
+const progress =
+    document.getElementById("progress");
+
+const percent =
+    document.getElementById("percent");
+
+let value = 0;
+
+
+const loading =
+    setInterval(() => {
+
+        value += 2.5;
+
+        if (value >= 100) {
+
+            value = 100;
+
+            clearInterval(loading);
+
+            setTimeout(showFinal, 100);
+        }
+
+        progress.style.width =
+            value + "%";
+
+        percent.textContent =
+            Math.floor(value) + "%";
+
+    }, 25);
+
+
+/* =========================
+   الشاشة النهائية
+========================= */
+
+function showFinal() {
+
+    document
+        .getElementById("final")
+        .style.display = "flex";
+
+    playAlarm();
+}
+
+
+/* =========================
+   صفارة الإنذار
+========================= */
+
+function playAlarm() {
+
+    const AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+
+    if (!AudioContext) return;
+
+    const audio =
+        new AudioContext();
+
+    const oscillator =
+        audio.createOscillator();
+
+    const gain =
+        audio.createGain();
+
+    oscillator.type =
+        "square";
+
+    oscillator.connect(gain);
+
+    gain.connect(audio.destination);
+
+    gain.gain.value =
+        0.04;
+
+    oscillator.start();
+
+    let high = false;
+
+    const alarm =
+        setInterval(() => {
+
+            high = !high;
+
+            oscillator.frequency
+                .setValueAtTime(
+                    high ? 950 : 450,
+                    audio.currentTime
+                );
+
+        }, 180);
+
+
+    setTimeout(() => {
+
+        clearInterval(alarm);
+
+        oscillator.stop();
+
+        audio.close();
+
+    }, 1800);
+}
+
+</script>
+
+</body>
+</html>
